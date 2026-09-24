@@ -3,166 +3,154 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-const TOTAL_STORAGE_KEY = "studyTotalSeconds";
-const STATS_STORAGE_KEY = "studyTimeStats";
+export default function Timer({ setBgColor, started }: { setBgColor: (color: string) => void, started:boolean }) {
+    const [time, setTime] = useState<number>(25 * 60);       // Focus = 25 min
+    const [breakTime, setBreakTime] = useState<number>(5 * 60); // Break = 5 min
+    const [run, setRun] = useState<boolean>(true);
+    const [focusMode, setMode] = useState<boolean>(true);
+    const [totalTimeElapsed, setTotalTime] = useState<number>(0);       // Focus = 25 min
 
-type StoredStudyStats = {
-    dateKey: string;
-    weekKey: string;
-    todaySeconds: number;
-    weekSeconds: number;
-    totalSeconds: number;
-};
 
-function getDateKey(date: Date) {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-}
-
-function getWeekKey(date: Date) {
-    const monday = new Date(date);
-    const day = monday.getDay();
-    const daysSinceMonday = day === 0 ? 6 : day - 1;
-
-    monday.setDate(monday.getDate() - daysSinceMonday);
-    return getDateKey(monday);
-}
-
-function formatTime(totalSeconds: number) {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return [hours, minutes, seconds]
-        .map((value) => value.toString().padStart(2, "0"))
-        .join(":");
-}
-
-export default function Timer() {
-    const [sessionSeconds, setSessionSeconds] = useState(0);
-    const [totalSeconds, setTotalSeconds] = useState(0);
-    const [todaySeconds, setTodaySeconds] = useState(0);
-    const [weekSeconds, setWeekSeconds] = useState(0);
-    const [isRunning, setIsRunning] = useState(false);
-    const [hasLoaded, setHasLoaded] = useState(false);
 
     useEffect(() => {
-        const now = new Date();
-        const currentDateKey = getDateKey(now);
-        const currentWeekKey = getWeekKey(now);
-        const savedStats = window.localStorage.getItem(STATS_STORAGE_KEY);
-        const legacyTotal = window.localStorage.getItem(TOTAL_STORAGE_KEY);
-        const parsedLegacyTotal = legacyTotal ? Number.parseInt(legacyTotal, 10) : 0;
+        if(!started) return;
 
-        let stats: StoredStudyStats | null = null;
-        try {
-            stats = savedStats ? JSON.parse(savedStats) as StoredStudyStats : null;
-        } catch {
-            stats = null;
+
+
+        let interval: NodeJS.Timeout | null = null;
+
+        if (run) {
+            if (focusMode) {
+                interval = setInterval(() => {
+                    setTime(prev => (prev > 0 ? prev - 1 : 0));
+                    setTotalTime(x => (x+1));
+                }, 1000);
+            } else {
+                interval = setInterval(() => {
+                    setBreakTime(prev => (prev > 0 ? prev - 1 : 0));
+
+                }, 1000);
+            }
         }
 
-        const storedTotal = stats?.totalSeconds ?? parsedLegacyTotal;
-        setTotalSeconds(Number.isFinite(storedTotal) && storedTotal >= 0 ? storedTotal : 0);
-
-        if (stats?.dateKey === currentDateKey) {
-            setTodaySeconds(stats.todaySeconds);
-        }
-
-        if (stats?.weekKey === currentWeekKey) {
-            setWeekSeconds(stats.weekSeconds);
-        }
-        setHasLoaded(true);
-    }, []);
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+        
+    }, [run, focusMode, started]); // 👈 include focusMode
 
     useEffect(() => {
-        if (!isRunning) return;
+        if (focusMode && time === 0) {
+            const audio = new Audio('/breaktime.mp3');
+            audio.play();
+            setTime(1500);
+            setMode(false);
+            setBgColor('red-50');
 
-        const interval = window.setInterval(() => {
-            setSessionSeconds((currentTime) => currentTime + 1);
-            setTotalSeconds((currentTime) => currentTime + 1);
-            setTodaySeconds((currentTime) => currentTime + 1);
-            setWeekSeconds((currentTime) => currentTime + 1);
-        }, 1000);
 
-        return () => window.clearInterval(interval);
-    }, [isRunning]);
-
-    useEffect(() => {
-        if (hasLoaded) {
-            const now = new Date();
-            const stats: StoredStudyStats = {
-                dateKey: getDateKey(now),
-                weekKey: getWeekKey(now),
-                todaySeconds,
-                weekSeconds,
-                totalSeconds,
-            };
-
-            window.localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
-            window.localStorage.setItem(TOTAL_STORAGE_KEY, totalSeconds.toString());
         }
-    }, [todaySeconds, weekSeconds, totalSeconds, hasLoaded]);
 
-    function reset() {
-        setIsRunning(false);
-        setSessionSeconds(0);
+        if (!focusMode && breakTime === 0) {
+            const audio = new Audio('/alarm.wav');
+            audio.play();
+            setBreakTime(300);
+            setMode(true);
+            setBgColor('blue-50');
+
+
+        }
+    }, [time, breakTime, focusMode]);
+
+    function makeTimeGood(num: number | undefined) {
+        if (!num) return "0m 0s";
+        const totalTime = Math.floor(num);
+        const m = Math.floor((totalTime % 3600) / 60);
+        const s = totalTime % 60;
+        return `${m}m ${s}s`;
+    }
+    function makeTimeGoodHr(num: number | undefined) {
+        if (!num) return "0h 0m 0s";
+        const totalTime = Math.floor(num);
+        const m = Math.floor((totalTime % 3600) / 60);
+        const s = totalTime % 60;
+        const h = Math.floor(totalTime/3600);
+        return `${h}h ${m}m ${s}s`;
     }
 
+    const radius = 90;
+    const circumference = 2 * Math.PI * radius;
+    const offset1 = circumference - (time / 1500) * circumference;
+    const offset2 = circumference - (breakTime / 300) * circumference;
+
     return (
-        <div className="flex flex-col items-center px-7 pb-7 pt-7 text-slate-900">
-            <div className="mb-6 flex w-full items-center justify-between">
-                <div>
-                    <p className="text-[9px] uppercase tracking-[0.25em] text-slate-400">Focus</p>
-                    <p className="mt-1 text-sm">Study session</p>
-                </div>
-                <span className={`h-2 w-2 rounded-full ${isRunning ? "bg-emerald-500" : "bg-slate-300"}`} />
-            </div>
-
-            <p className="text-4xl tabular-nums tracking-tight text-slate-800">{formatTime(sessionSeconds)}</p>
-            <p className="mt-3 text-[9px] uppercase tracking-[0.2em] text-slate-400">
-                {isRunning ? "In progress" : "Ready when you are"}
-            </p>
-
-            <div className="mt-6 flex items-center gap-3">
+        <div className="mt-0 relative">
+            
+            {/* Toggle Buttons */}
+            <div className="w-full text-xs flex justify-around mb-3 mt-0">
                 <button
-                    aria-label={isRunning ? "Pause stopwatch" : "Start stopwatch"}
-                    className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 p-2 shadow-lg shadow-slate-900/20 transition-transform hover:scale-105"
-                    onClick={() => setIsRunning((running) => !running)}
-                >
-                    <Image
-                        src={isRunning ? "/pause.png" : "/play.png"}
-                        alt={isRunning ? "Pause" : "Start"}
-                        width={35}
-                        height={35}
-                        className="brightness-0 invert"
-                        unoptimized
-                    />
+                    className={`text-sm text-blue-900 pt-4 p-2 w-1/2 ${focusMode ? 'border-none' : 'bg-blue-50 border-b border-r border-gray-300 '}`}
+                    onClick={() => { setMode(true); setBgColor('blue-50'); }}>
+                    Focus
                 </button>
                 <button
-                    className="rounded-full border border-slate-200 px-4 py-3 text-[9px] text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-800"
-                    onClick={reset}
-                >
-                    Reset
+                    className={`text-sm text-red-900 pt-4 p-2 w-1/2 ${focusMode ? 'bg-red-50 border-b border-l border-gray-300 ' : 'border-none'}`}
+                    onClick={() => { setMode(false); setBgColor('red-50'); }}>
+                    Break
                 </button>
             </div>
 
-            <div className="mt-7 grid w-full grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-5 text-center">
-                <div>
-                    <p className="text-[8px] uppercase tracking-[0.15em] text-slate-400">Today</p>
-                    <p className="mt-2 text-[9px] text-slate-700">{formatTime(todaySeconds)}</p>
+            {/* Focus Section */}
+            {focusMode && (
+                <div className="h-50 rounded-2xl w-full flex flex-col justify-center items-center text-blue-900">
+                    <div className="h-55 w-55   border-gray-500 flex flex-col items-center justify-center">
+                        <div className="flex flex-col justify-center items-center relative">
+                            <svg className="w-55 h-55 transform -rotate-90  absolute">
+                                {/* Background circle */}
+                                <circle cx="110" cy="110" r={radius} stroke="" strokeWidth="10" fill="transparent" />
+                                {/* Progress circle */}
+                                <circle cx="110" cy="110" r={radius} stroke="darkblue" strokeWidth="10" fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset1} strokeLinecap="round" className="transition-all duration-500" />
+                            </svg>
+                            <p className="text-xl mt-5">{makeTimeGood(time)}</p>
+                            <button className={`mt-2 z-100 ${run ? 'block' : 'hidden'}`} onClick={() => setRun(false)}>
+                                <Image src={'/pause.png'} alt="pause" width={35} height={35} unoptimized/>
+                            </button>
+                            <button className={`mt-2 z-100 ${run ? 'hidden' : 'block'}`} onClick={() => setRun(true)}>
+                                <Image src={'/play.png'} alt="resume" width={35} height={35} unoptimized/>
+                            </button>
+
+                        </div>
+
+
+                    </div>
                 </div>
-                <div>
-                    <p className="text-[8px] uppercase tracking-[0.15em] text-slate-400">This week</p>
-                    <p className="mt-2 text-[9px] text-slate-700">{formatTime(weekSeconds)}</p>
+            )}
+
+            {/* Break Section */}
+            {!focusMode && (
+                <div className="h-50 rounded-2xl w-full flex flex-col justify-center items-center text-red-900">
+                    <div className="h-55 w-55   border-gray-500 flex flex-col items-center justify-center">
+                        <div className="flex flex-col justify-center items-center relative">
+                            <svg className="w-55 h-55 transform -rotate-90  absolute">
+                                {/* Background circle */}
+                                <circle cx="110" cy="110" r={radius} stroke="" strokeWidth="10" fill="transparent" />
+                                {/* Progress circle */}
+                                <circle cx="110" cy="110" r={radius} stroke="darkred" strokeWidth="10" fill="transparent" strokeDasharray={circumference} strokeDashoffset={offset2} strokeLinecap="round" className="transition-all duration-500" />
+                            </svg>
+                            <p className="text-xl mt-5">{makeTimeGood(breakTime)}</p>
+                            <button className={`mt-2 z-100 ${run ? '' : 'hidden'}`} onClick={() => setRun(false)}>
+                                <Image src={'/pause.png'} alt="pause" width={35} height={35} unoptimized/>
+                            </button>
+                            <button className={`mt-2 z-100 ${run ? 'hidden' : ''}`} onClick={() => setRun(true)}>
+                                <Image src={'/play.png'} alt="resume" width={35} height={35} unoptimized/>
+                            </button>
+
+                        </div>
+
+
+                    </div>
                 </div>
-                <div>
-                    <p className="text-[8px] uppercase tracking-[0.15em] text-slate-400">All time</p>
-                    <p className="mt-2 text-[9px] text-slate-700">{formatTime(totalSeconds)}</p>
-                </div>
-            </div>
+            )}
+            <p className="mt-3 text-[8px] text-center">Total Focused Time: {makeTimeGoodHr(totalTimeElapsed)}</p>
         </div>
     );
 }

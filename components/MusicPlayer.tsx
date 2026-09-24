@@ -24,7 +24,7 @@ function makeTimeGood(num:number | undefined) {
     return `${m}m ${s}s`;
 }
 
-export default function MusicPlayer() {
+export default function MusicPlayer({ start }: { start: boolean }) {
     const [playing, setPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [track, setTrack] = useState(0);
@@ -43,6 +43,11 @@ export default function MusicPlayer() {
         localStorage.setItem("lastTrackIndex", track.toString());
     }, [track]);
 
+    // auto play when track changes
+    useEffect(() => {
+        audioRef.current?.play().catch(err => console.log("Autoplay blocked:", err));
+    }, [track]);
+
     // keep "playing" state in sync with actual <audio> events
     useEffect(() => {
         const audio = audioRef.current;
@@ -59,6 +64,14 @@ export default function MusicPlayer() {
             audio.removeEventListener("pause", handlePause);
         };
     }, []);
+
+    useEffect(() => {
+  if (start) {
+    audioRef.current?.play().catch(err => {
+      console.log("Autoplay blocked, needs user gesture:", err);
+    });
+  }
+}, [start]);
 
     const progressNo = () => {
         if (audioRef.current) {
@@ -80,7 +93,7 @@ export default function MusicPlayer() {
     };
 
     return (
-        <div className="absolute bottom-5 right-5 flex h-fit w-70 flex-col items-center rounded-[2rem] border border-white/70 bg-white/85 p-5 text-slate-900 shadow-2xl shadow-black/20 backdrop-blur-md">
+        <div className="w-70 h-fit absolute bottom-5 right-5 rounded-2xl p-5 bg-green-50 opacity-80 flex flex-col items-center">
             <audio
                 ref={audioRef}
                 src={tracks[track].src}
@@ -89,7 +102,7 @@ export default function MusicPlayer() {
                 preload="metadata"
             />
             <div className="w-full text-center flex">
-                <p className="text-sm text-slate-800">{tracks[track].title}</p>
+                <p className="text-sm text-green-950">{tracks[track].title}</p>
             </div>
             <div className="w-full flex justify-around text-black text-xs mt-3 mb-3">
                 <button onClick={() => setTrack((c) => (c - 1 + tracks.length) % tracks.length)}>
