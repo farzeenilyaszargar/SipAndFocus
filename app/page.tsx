@@ -13,7 +13,7 @@ export default function Home() {
   return (
 
 
-    <div className="font-main h-screen bg-[url('/art.gif')] bg-center bg-cover text-white ">
+    <div className="font-main relative h-screen overflow-hidden bg-[url('/art.gif')] bg-center bg-cover text-white ">
       <Obstacle />
       {
         !started ?
