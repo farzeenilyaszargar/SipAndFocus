@@ -1,7 +1,7 @@
 export default function Obstacle()
 {
     return(
-        <div className="h-screen w-screen absolute bg-black opacity-60">
+        <div className="pointer-events-none absolute inset-0 bg-black/60">
 
         </div>
     );

@@ -118,7 +118,7 @@ export default function Timer({ started }: { started: boolean }) {
     }
 
     return (
-        <div className="flex flex-col items-center px-6 pb-6 pt-7 text-slate-900">
+        <div className="flex flex-col items-center px-7 pb-7 pt-7 text-slate-900">
             <div className="mb-6 flex w-full items-center justify-between">
                 <div>
                     <p className="text-[9px] uppercase tracking-[0.25em] text-slate-400">Focus</p>
@@ -127,7 +127,7 @@ export default function Timer({ started }: { started: boolean }) {
                 <span className={`h-2 w-2 rounded-full ${isRunning ? "bg-emerald-500" : "bg-slate-300"}`} />
             </div>
 
-            <p className="text-5xl tabular-nums tracking-tight text-slate-800">{formatTime(sessionSeconds)}</p>
+            <p className="text-4xl tabular-nums tracking-tight text-slate-800">{formatTime(sessionSeconds)}</p>
             <p className="mt-3 text-[9px] uppercase tracking-[0.2em] text-slate-400">
                 {isRunning ? "In progress" : "Ready when you are"}
             </p>
@@ -157,16 +157,16 @@ export default function Timer({ started }: { started: boolean }) {
 
             <div className="mt-7 grid w-full grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-5 text-center">
                 <div>
-                    <p className="text-[8px] uppercase tracking-wide text-slate-400">Today</p>
-                    <p className="mt-2 text-[10px] text-slate-700">{formatTime(todaySeconds)}</p>
+                    <p className="text-[8px] uppercase tracking-[0.15em] text-slate-400">Today</p>
+                    <p className="mt-2 text-[9px] text-slate-700">{formatTime(todaySeconds)}</p>
                 </div>
                 <div>
-                    <p className="text-[8px] uppercase tracking-wide text-slate-400">Week</p>
-                    <p className="mt-2 text-[10px] text-slate-700">{formatTime(weekSeconds)}</p>
+                    <p className="text-[8px] uppercase tracking-[0.15em] text-slate-400">This week</p>
+                    <p className="mt-2 text-[9px] text-slate-700">{formatTime(weekSeconds)}</p>
                 </div>
                 <div>
-                    <p className="text-[8px] uppercase tracking-wide text-slate-400">Total</p>
-                    <p className="mt-2 text-[10px] text-slate-700">{formatTime(totalSeconds)}</p>
+                    <p className="text-[8px] uppercase tracking-[0.15em] text-slate-400">All time</p>
+                    <p className="mt-2 text-[9px] text-slate-700">{formatTime(totalSeconds)}</p>
                 </div>
             </div>
         </div>
