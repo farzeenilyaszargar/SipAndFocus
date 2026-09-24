@@ -4,6 +4,32 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 
 const TOTAL_STORAGE_KEY = "studyTotalSeconds";
+const STATS_STORAGE_KEY = "studyTimeStats";
+
+type StoredStudyStats = {
+    dateKey: string;
+    weekKey: string;
+    todaySeconds: number;
+    weekSeconds: number;
+    totalSeconds: number;
+};
+
+function getDateKey(date: Date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+function getWeekKey(date: Date) {
+    const monday = new Date(date);
+    const day = monday.getDay();
+    const daysSinceMonday = day === 0 ? 6 : day - 1;
+
+    monday.setDate(monday.getDate() - daysSinceMonday);
+    return getDateKey(monday);
+}
 
 function formatTime(totalSeconds: number) {
     const hours = Math.floor(totalSeconds / 3600);
@@ -18,15 +44,35 @@ function formatTime(totalSeconds: number) {
 export default function Timer({ started }: { started: boolean }) {
     const [sessionSeconds, setSessionSeconds] = useState(0);
     const [totalSeconds, setTotalSeconds] = useState(0);
+    const [todaySeconds, setTodaySeconds] = useState(0);
+    const [weekSeconds, setWeekSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
 
     useEffect(() => {
-        const savedTime = window.localStorage.getItem(TOTAL_STORAGE_KEY);
-        const parsedTime = savedTime ? Number.parseInt(savedTime, 10) : 0;
+        const now = new Date();
+        const currentDateKey = getDateKey(now);
+        const currentWeekKey = getWeekKey(now);
+        const savedStats = window.localStorage.getItem(STATS_STORAGE_KEY);
+        const legacyTotal = window.localStorage.getItem(TOTAL_STORAGE_KEY);
+        const parsedLegacyTotal = legacyTotal ? Number.parseInt(legacyTotal, 10) : 0;
 
-        if (Number.isFinite(parsedTime) && parsedTime >= 0) {
-            setTotalSeconds(parsedTime);
+        let stats: StoredStudyStats | null = null;
+        try {
+            stats = savedStats ? JSON.parse(savedStats) as StoredStudyStats : null;
+        } catch {
+            stats = null;
+        }
+
+        const storedTotal = stats?.totalSeconds ?? parsedLegacyTotal;
+        setTotalSeconds(Number.isFinite(storedTotal) && storedTotal >= 0 ? storedTotal : 0);
+
+        if (stats?.dateKey === currentDateKey) {
+            setTodaySeconds(stats.todaySeconds);
+        }
+
+        if (stats?.weekKey === currentWeekKey) {
+            setWeekSeconds(stats.weekSeconds);
         }
         setHasLoaded(true);
     }, []);
@@ -43,6 +89,8 @@ export default function Timer({ started }: { started: boolean }) {
         const interval = window.setInterval(() => {
             setSessionSeconds((currentTime) => currentTime + 1);
             setTotalSeconds((currentTime) => currentTime + 1);
+            setTodaySeconds((currentTime) => currentTime + 1);
+            setWeekSeconds((currentTime) => currentTime + 1);
         }, 1000);
 
         return () => window.clearInterval(interval);
@@ -50,9 +98,19 @@ export default function Timer({ started }: { started: boolean }) {
 
     useEffect(() => {
         if (hasLoaded) {
+            const now = new Date();
+            const stats: StoredStudyStats = {
+                dateKey: getDateKey(now),
+                weekKey: getWeekKey(now),
+                todaySeconds,
+                weekSeconds,
+                totalSeconds,
+            };
+
+            window.localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
             window.localStorage.setItem(TOTAL_STORAGE_KEY, totalSeconds.toString());
         }
-    }, [totalSeconds, hasLoaded]);
+    }, [todaySeconds, weekSeconds, totalSeconds, hasLoaded]);
 
     function reset() {
         setIsRunning(false);
@@ -92,7 +150,11 @@ export default function Timer({ started }: { started: boolean }) {
                 </button>
             </div>
 
-            <p className="mt-5 text-[9px]">Total study time: {formatTime(totalSeconds)}</p>
+            <div className="mt-5 grid w-full grid-cols-2 gap-2 text-center text-[8px]">
+                <p>Today: {formatTime(todaySeconds)}</p>
+                <p>This week: {formatTime(weekSeconds)}</p>
+            </div>
+            <p className="mt-2 text-[9px]">Total study time: {formatTime(totalSeconds)}</p>
         </div>
     );
 }
