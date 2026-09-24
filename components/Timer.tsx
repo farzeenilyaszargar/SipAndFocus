@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-const STORAGE_KEY = "studyElapsedSeconds";
+const TOTAL_STORAGE_KEY = "studyTotalSeconds";
 
 function formatTime(totalSeconds: number) {
     const hours = Math.floor(totalSeconds / 3600);
@@ -16,16 +16,17 @@ function formatTime(totalSeconds: number) {
 }
 
 export default function Timer({ started }: { started: boolean }) {
-    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const [sessionSeconds, setSessionSeconds] = useState(0);
+    const [totalSeconds, setTotalSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
 
     useEffect(() => {
-        const savedTime = window.localStorage.getItem(STORAGE_KEY);
+        const savedTime = window.localStorage.getItem(TOTAL_STORAGE_KEY);
         const parsedTime = savedTime ? Number.parseInt(savedTime, 10) : 0;
 
         if (Number.isFinite(parsedTime) && parsedTime >= 0) {
-            setElapsedSeconds(parsedTime);
+            setTotalSeconds(parsedTime);
         }
         setHasLoaded(true);
     }, []);
@@ -40,7 +41,8 @@ export default function Timer({ started }: { started: boolean }) {
         if (!isRunning) return;
 
         const interval = window.setInterval(() => {
-            setElapsedSeconds((currentTime) => currentTime + 1);
+            setSessionSeconds((currentTime) => currentTime + 1);
+            setTotalSeconds((currentTime) => currentTime + 1);
         }, 1000);
 
         return () => window.clearInterval(interval);
@@ -48,13 +50,13 @@ export default function Timer({ started }: { started: boolean }) {
 
     useEffect(() => {
         if (hasLoaded) {
-            window.localStorage.setItem(STORAGE_KEY, elapsedSeconds.toString());
+            window.localStorage.setItem(TOTAL_STORAGE_KEY, totalSeconds.toString());
         }
-    }, [elapsedSeconds, hasLoaded]);
+    }, [totalSeconds, hasLoaded]);
 
     function reset() {
         setIsRunning(false);
-        setElapsedSeconds(0);
+        setSessionSeconds(0);
     }
 
     return (
@@ -62,7 +64,7 @@ export default function Timer({ started }: { started: boolean }) {
             <p className="mb-4 text-[10px] uppercase tracking-wide">Study stopwatch</p>
 
             <div className="flex h-55 w-55 flex-col items-center justify-center rounded-full border-8 border-blue-900/80 bg-blue-50/70 shadow-inner">
-                <p className="text-2xl tabular-nums">{formatTime(elapsedSeconds)}</p>
+                <p className="text-2xl tabular-nums">{formatTime(sessionSeconds)}</p>
                 <p className="mt-2 text-[8px] uppercase tracking-wide">
                     {isRunning ? "Studying" : "Paused"}
                 </p>
@@ -90,7 +92,7 @@ export default function Timer({ started }: { started: boolean }) {
                 </button>
             </div>
 
-            <p className="mt-5 text-[9px]">Total study time: {formatTime(elapsedSeconds)}</p>
+            <p className="mt-5 text-[9px]">Total study time: {formatTime(totalSeconds)}</p>
         </div>
     );
 }
