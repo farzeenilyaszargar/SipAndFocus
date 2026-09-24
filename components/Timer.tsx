@@ -118,20 +118,24 @@ export default function Timer({ started }: { started: boolean }) {
     }
 
     return (
-        <div className="relative mt-0 flex flex-col items-center px-4 pb-5 pt-4 text-blue-950">
-            <p className="mb-4 text-[10px] uppercase tracking-wide">Study stopwatch</p>
-
-            <div className="flex h-55 w-55 flex-col items-center justify-center rounded-full border-8 border-blue-900/80 bg-blue-50/70 shadow-inner">
-                <p className="text-2xl tabular-nums">{formatTime(sessionSeconds)}</p>
-                <p className="mt-2 text-[8px] uppercase tracking-wide">
-                    {isRunning ? "Studying" : "Paused"}
-                </p>
+        <div className="flex flex-col items-center px-6 pb-6 pt-7 text-slate-900">
+            <div className="mb-6 flex w-full items-center justify-between">
+                <div>
+                    <p className="text-[9px] uppercase tracking-[0.25em] text-slate-400">Focus</p>
+                    <p className="mt-1 text-sm">Study session</p>
+                </div>
+                <span className={`h-2 w-2 rounded-full ${isRunning ? "bg-emerald-500" : "bg-slate-300"}`} />
             </div>
 
-            <div className="mt-5 flex items-center gap-5">
+            <p className="text-5xl tabular-nums tracking-tight text-slate-800">{formatTime(sessionSeconds)}</p>
+            <p className="mt-3 text-[9px] uppercase tracking-[0.2em] text-slate-400">
+                {isRunning ? "In progress" : "Ready when you are"}
+            </p>
+
+            <div className="mt-6 flex items-center gap-3">
                 <button
                     aria-label={isRunning ? "Pause stopwatch" : "Start stopwatch"}
-                    className="rounded-full p-2 transition-transform hover:scale-110"
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 p-2 shadow-lg shadow-slate-900/20 transition-transform hover:scale-105"
                     onClick={() => setIsRunning((running) => !running)}
                 >
                     <Image
@@ -139,22 +143,32 @@ export default function Timer({ started }: { started: boolean }) {
                         alt={isRunning ? "Pause" : "Start"}
                         width={35}
                         height={35}
+                        className="brightness-0 invert"
                         unoptimized
                     />
                 </button>
                 <button
-                    className="rounded-xl border border-blue-900/40 px-3 py-2 text-[9px] transition-colors hover:bg-blue-100"
+                    className="rounded-full border border-slate-200 px-4 py-3 text-[9px] text-slate-500 transition-colors hover:border-slate-400 hover:text-slate-800"
                     onClick={reset}
                 >
                     Reset
                 </button>
             </div>
 
-            <div className="mt-5 grid w-full grid-cols-2 gap-2 text-center text-[8px]">
-                <p>Today: {formatTime(todaySeconds)}</p>
-                <p>This week: {formatTime(weekSeconds)}</p>
+            <div className="mt-7 grid w-full grid-cols-3 divide-x divide-slate-200 border-t border-slate-200 pt-5 text-center">
+                <div>
+                    <p className="text-[8px] uppercase tracking-wide text-slate-400">Today</p>
+                    <p className="mt-2 text-[10px] text-slate-700">{formatTime(todaySeconds)}</p>
+                </div>
+                <div>
+                    <p className="text-[8px] uppercase tracking-wide text-slate-400">Week</p>
+                    <p className="mt-2 text-[10px] text-slate-700">{formatTime(weekSeconds)}</p>
+                </div>
+                <div>
+                    <p className="text-[8px] uppercase tracking-wide text-slate-400">Total</p>
+                    <p className="mt-2 text-[10px] text-slate-700">{formatTime(totalSeconds)}</p>
+                </div>
             </div>
-            <p className="mt-2 text-[9px]">Total study time: {formatTime(totalSeconds)}</p>
         </div>
     );
 }
