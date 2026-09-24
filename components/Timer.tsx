@@ -41,7 +41,7 @@ function formatTime(totalSeconds: number) {
         .join(":");
 }
 
-export default function Timer({ started }: { started: boolean }) {
+export default function Timer() {
     const [sessionSeconds, setSessionSeconds] = useState(0);
     const [totalSeconds, setTotalSeconds] = useState(0);
     const [todaySeconds, setTodaySeconds] = useState(0);
@@ -76,12 +76,6 @@ export default function Timer({ started }: { started: boolean }) {
         }
         setHasLoaded(true);
     }, []);
-
-    useEffect(() => {
-        if (started && hasLoaded) {
-            setIsRunning(true);
-        }
-    }, [started, hasLoaded]);
 
     useEffect(() => {
         if (!isRunning) return;
